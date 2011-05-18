@@ -74,7 +74,7 @@ void request_handler::handle_request(const request& req, reply& rep)
     rep.headers[0].value = "close";
     rep.headers[1].name = "Content-Type";
     rep.headers[1].value = "audio/x-pcm";
-	rep.keep_open = true;
+    rep.keep_open = true;
   }
   else
   {
@@ -84,7 +84,7 @@ void request_handler::handle_request(const request& req, reply& rep)
     if (!is)
     {
       rep = reply::stock_reply(reply::not_found);
-	  return;
+      return;
     }
 
     // Fill out the reply to be sent to the client.
@@ -96,7 +96,7 @@ void request_handler::handle_request(const request& req, reply& rep)
     rep.headers[0].name = "Content-Length";
     rep.headers[0].value = boost::lexical_cast<std::string>(rep.content.size());
     rep.headers[1].value = mime_types::extension_to_type(extension);
-	rep.keep_open = false;
+    rep.keep_open = false;
   }
 }
 
