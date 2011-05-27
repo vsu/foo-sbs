@@ -292,7 +292,7 @@ void connection::handle_client_msg(client_msg& c_msg)
 
 		server_msg_audg msg_audg;
 		msg_audg.volume = 128;
-		msg_audg.dvc_enable = true;
+		msg_audg.dvc_enable = false;
 		msg_audg.preamp = 255;
 		send_data(msg_audg.to_vector());
 
