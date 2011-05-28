@@ -23,104 +23,106 @@
 
 #define DISCONNECT_COUNT  3
 
-namespace slim {
-namespace server {
+namespace slim
+{
+namespace server
+{
 
 class connection_manager;
 
 /// Represents a single connection from a client.
 class connection
-  : public boost::enable_shared_from_this<connection>,
-    private boost::noncopyable
+    : public boost::enable_shared_from_this<connection>,
+  private boost::noncopyable
 {
 public:
-	/// Construct a connection with the given io_service.
-	explicit connection(boost::asio::io_service& io_service,
-	  connection_manager& manager, const std::string& status_filename);
+    /// Construct a connection with the given io_service.
+    explicit connection(boost::asio::io_service& io_service,
+                        connection_manager& manager, const std::string& status_filename);
 
-	/// Get the socket associated with the connection.
-	boost::asio::ip::tcp::socket& socket();
+    /// Get the socket associated with the connection.
+    boost::asio::ip::tcp::socket& socket();
 
-	/// Start the first asynchronous operation for the connection.
-	void start();
+    /// Start the first asynchronous operation for the connection.
+    void start();
 
-	/// Stop all asynchronous operations associated with the connection.
-	void stop();
+    /// Stop all asynchronous operations associated with the connection.
+    void stop();
 
-	/// Send a stream status command.
-	void send_stream_status();
+    /// Send a stream status command.
+    void send_stream_status();
 
-	/// Send a stream play command.
-	void send_stream_play(const std::string url,
-		unsigned short int stream_port, int bits_per_sample, int sample_rate);
+    /// Send a stream play command.
+    void send_stream_play(const std::string url,
+                          unsigned short int stream_port, int bits_per_sample, int sample_rate);
 
-	/// Send a stream pause command.
-	void send_stream_pause();
+    /// Send a stream pause command.
+    void send_stream_pause();
 
-	/// Send a stream unpause command.
-	void send_stream_unpause();
+    /// Send a stream unpause command.
+    void send_stream_unpause();
 
-	/// Send a stream stop command.
-	void send_stream_stop();
+    /// Send a stream stop command.
+    void send_stream_stop();
 
 private:
-	/// Handles an incoming client message.
-	void handle_client_msg(client_msg& c_msg);
+    /// Handles an incoming client message.
+    void handle_client_msg(client_msg& c_msg);
 
-	/// Handle completion of a read operation.
-	void handle_read(const boost::system::error_code& e,
-	  std::size_t bytes_transferred);
+    /// Handle completion of a read operation.
+    void handle_read(const boost::system::error_code& e,
+                     std::size_t bytes_transferred);
 
-	/// Configures the native socket.
-	void configure_socket();
+    /// Configures the native socket.
+    void configure_socket();
 
-	/// Sends data to the native socket.
-	bool send_data(std::vector<char> data);
+    /// Sends data to the native socket.
+    bool send_data(std::vector<char> data);
 
-	/// Handle status timer timeout.
-	void handle_status_timer();
+    /// Handle status timer timeout.
+    void handle_status_timer();
 
-	/// Disconnects the client connection.
-	void disconnect_client();
+    /// Disconnects the client connection.
+    void disconnect_client();
 
-	/// Adds the client to the HTTP server index file.
-	void add_client_html_file(const std::string device_name, char firmware_revision);
+    /// Adds the client to the HTTP server index file.
+    void add_client_html_file(const std::string device_name, char firmware_revision);
 
-	/// Deletes the client from the HTTP server index file.
-	void delete_client_html_file();
+    /// Deletes the client from the HTTP server index file.
+    void delete_client_html_file();
 
-	/// Socket for the connection.
-	boost::asio::ip::tcp::socket socket_;
+    /// Socket for the connection.
+    boost::asio::ip::tcp::socket socket_;
 
-	/// The manager for this connection.
-	connection_manager& connection_manager_;
+    /// The manager for this connection.
+    connection_manager& connection_manager_;
 
-	/// Buffer for incoming data.
-	boost::array<char, 8192> buffer_;
+    /// Buffer for incoming data.
+    boost::array<char, 8192> buffer_;
 
-	/// The incoming client message.
-	client_msg client_msg_;
+    /// The incoming client message.
+    client_msg client_msg_;
 
-	/// The parser for the client message.
-	client_msg_parser client_msg_parser_;
+    /// The parser for the client message.
+    client_msg_parser client_msg_parser_;
 
-	/// The client status filename.
-	std::string status_filename_;
+    /// The client status filename.
+    std::string status_filename_;
 
-	/// The underlying native socket.
-	SOCKET native_socket_;
+    /// The underlying native socket.
+    SOCKET native_socket_;
 
-	/// The status timer.
-	boost::asio::repeating_timer status_timer_;
+    /// The status timer.
+    boost::asio::repeating_timer status_timer_;
 
-	/// The device disconnection counter.
-	int disconnection_counter_;
+    /// The device disconnection counter.
+    int disconnection_counter_;
 
-	/// The device MAC address.
-	std::string mac_address_;
+    /// The device MAC address.
+    std::string mac_address_;
 
-	/// Indicates whether the device is ready to receive commands.
-	bool device_initialized_;
+    /// Indicates whether the device is ready to receive commands.
+    bool device_initialized_;
 };
 
 typedef boost::shared_ptr<connection> connection_ptr;

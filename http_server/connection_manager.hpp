@@ -15,30 +15,32 @@
 #include <boost/noncopyable.hpp>
 #include "connection.hpp"
 
-namespace http {
-namespace server {
+namespace http
+{
+namespace server
+{
 
 /// Manages open connections so that they may be cleanly stopped when the server
 /// needs to shut down.
 class connection_manager
-  : private boost::noncopyable
+    : private boost::noncopyable
 {
 public:
-  /// Add the specified connection to the manager and start it.
-  void start(connection_ptr c);
+    /// Add the specified connection to the manager and start it.
+    void start(connection_ptr c);
 
-  /// Stop the specified connection.
-  void stop(connection_ptr c);
+    /// Stop the specified connection.
+    void stop(connection_ptr c);
 
-  /// Stop all connections.
-  void stop_all();
+    /// Stop all connections.
+    void stop_all();
 
-  /// Send data to all connections.
-  void send_data_all(void * data, size_t length);
+    /// Send data to all connections.
+    void send_data_all(void * data, size_t length);
 
 private:
-  /// The managed connections.
-  std::set<connection_ptr> connections_;
+    /// The managed connections.
+    std::set<connection_ptr> connections_;
 };
 
 } // namespace server

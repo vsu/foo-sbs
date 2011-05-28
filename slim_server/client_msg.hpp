@@ -11,32 +11,34 @@
 #include <string>
 #include <vector>
 
-namespace slim {
-namespace server {
+namespace slim
+{
+namespace server
+{
 
 /// A message received from a client.
 struct client_msg
 {
-	/// The command string.
-	std::string command;
+    /// The command string.
+    std::string command;
 
-	/// The length of the packet.
-	int length;
+    /// The length of the packet.
+    int length;
 
-	/// The command data.
-	std::vector<char> data;
+    /// The command data.
+    std::vector<char> data;
 
-	/// Clears all fields of the client message.
-	void clear();
+    /// Clears all fields of the client message.
+    void clear();
 
-	/// Gets the device name from the device code. 
-	std::string get_device_name();
+    /// Gets the device name from the device code.
+    std::string get_device_name();
 
-	/// Gets the device firmware revision.
-	char get_firmware_revision();
+    /// Gets the device firmware revision.
+    char get_firmware_revision();
 
-	/// Gets the device MAC address.
-	std::vector<unsigned char> get_mac_address();
+    /// Gets the device MAC address.
+    std::vector<unsigned char> get_mac_address();
 };
 
 } // namespace server
