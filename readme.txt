@@ -54,4 +54,4 @@ Include files from the Windows Template Library (http://sourceforge.net/projects
 Boost C++ libraries (www.boost.org) (You can find pre-built binaries at boostpro.com)
 Boost HTXML (http://www.ibusy.com/articles/software-development/boost-htxml-library.html)
 
-Project and solution files are currently for Visual Studio 2008.
+Project and solution files are currently for Visual Studio 2010.

@@ -285,6 +285,10 @@ void connection::handle_client_msg(client_msg& c_msg)
 
         mac_address_ = std::string(mac_str);
 
+        // Delete any existing entries with this MAC address
+        delete_client_html_file();
+
+        // Add a new entry for this MAC address
         add_client_html_file(c_msg.get_device_name(), c_msg.get_firmware_revision());
 
         server_msg_aude msg_aude;
@@ -426,6 +430,7 @@ void connection::add_client_html_file(const std::string device_name, char firmwa
         if (div.size() > 0)
         {
             boost::htxml::element * span = new boost::htxml::element("span", div[0]);
+            boost::htxml::element * br = new boost::htxml::element("br", div[0]);
 
             boost::htxml::attrib_value attr;
             attr._name = "id";
@@ -444,6 +449,7 @@ void connection::add_client_html_file(const std::string device_name, char firmwa
             span->setValue("[" + now_str + "] " + device_name + " revision " + revision_str);
 
             div[0]->addChild(boost::htxml::ptr_element_t(span));
+            div[0]->addChild(boost::htxml::ptr_element_t(br));
         }
 
         std::ofstream out_file(status_filename_.c_str());
