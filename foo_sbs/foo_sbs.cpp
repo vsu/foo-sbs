@@ -23,17 +23,21 @@ boost::thread * slim_server_thread = NULL;
 bool send_play = false;
 bool is_playing = false;
 
-std::string temp_dir;
+std::string app_path;
 
 
 class initquit_sbs : public initquit
 {
     void on_init()
     {
-        char * temp_dir_ptr = getenv("TEMP");
-        temp_dir = (temp_dir_ptr != NULL) ? std::string(temp_dir_ptr) : ".";
-        temp_dir += "\\foo_sbs";
-        boost::filesystem::create_directories(temp_dir);
+        app_path.append(core_api::get_profile_path());
+        app_path.append("\\");
+        app_path.append(core_api::get_my_file_name());
+
+        // Remove the "file://" prefix
+        app_path.erase(0, 7);
+
+        boost::filesystem::create_directories(app_path);
 
         g_start_server();
         g_register_callback_sbs();
@@ -145,14 +149,14 @@ static preferences_page_factory_t<preferences_page_myimpl> g_preferences_page_sb
 
 void g_http_server_thread_worker()
 {
-    http_server = new http::server::server("0.0.0.0", cfg_http_port.get_value(), temp_dir);
+    http_server = new http::server::server("0.0.0.0", cfg_http_port.get_value(), app_path);
     http_server->run();
 }
 
 void g_slim_server_thread_worker()
 {
     slim_server = new slim::server::server("0.0.0.0", cfg_slim_port.get_value(),
-                                           temp_dir + "\\index.html");
+                                           app_path + "\\index.html");
     slim_server->run();
 }
 
