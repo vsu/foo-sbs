@@ -466,7 +466,10 @@ void connection::html_add_client(const std::string device_name, char firmware_re
             boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
             std::string now_str = boost::posix_time::to_simple_string(now);
 
-            span->setValue("[" + now_str + "] " + device_name + " revision " + revision_str);
+            // Get IP address of socket
+            std::string ip_addr = socket_.remote_endpoint().address().to_string();
+
+            span->setValue("[" + now_str + "] " + mac_address_ + " | " + ip_addr + " | " + device_name + " revision " + revision_str);
 
             div[0]->addChild(boost::htxml::ptr_element_t(span));
             div[0]->addChild(boost::htxml::ptr_element_t(br));
