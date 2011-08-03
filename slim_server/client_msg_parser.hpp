@@ -55,7 +55,7 @@ private:
     int index_;
 };
 
+} // namespace server
 } // namespace slim
-} // namespace http
 
 #endif // SLIM_CLIENT_MSG_PARSER_HPP

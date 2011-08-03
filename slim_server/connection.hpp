@@ -2,6 +2,7 @@
 // connection.hpp
 // ~~~~~~~~~~~~~~
 //
+// Copyright (c) 2011 Victor Su
 // Copyright (c) 2003-2011 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -19,8 +20,8 @@
 #include "server_msg.hpp"
 #include "client_msg.hpp"
 #include "client_msg_parser.hpp"
-#include "basic_repeating_timer.h"
 
+#define STATUS_POLL_SEC  10
 #define DISCONNECT_COUNT  3
 
 namespace slim
@@ -38,7 +39,8 @@ class connection
 public:
     /// Construct a connection with the given io_service.
     explicit connection(boost::asio::io_service& io_service,
-                        connection_manager& manager, const std::string& status_filename);
+                        connection_manager& manager, 
+                        const std::string& status_filename);
 
     /// Get the socket associated with the connection.
     boost::asio::ip::tcp::socket& socket();
@@ -54,7 +56,9 @@ public:
 
     /// Send a stream play command.
     void send_stream_play(const std::string url,
-                          unsigned short int stream_port, int bits_per_sample, int sample_rate);
+                          unsigned short int stream_port, 
+                          int bits_per_sample, 
+                          int sample_rate);
 
     /// Send a stream pause command.
     void send_stream_pause();
@@ -80,16 +84,16 @@ private:
     bool send_data(std::vector<char> data);
 
     /// Handle status timer timeout.
-    void handle_status_timer();
+    void handle_status_timer(const boost::system::error_code& e);
 
     /// Disconnects the client connection.
     void disconnect_client();
 
     /// Adds the client to the HTTP server index file.
-    void add_client_html_file(const std::string device_name, char firmware_revision);
+    void html_add_client(const std::string device_name, char firmware_revision);
 
     /// Deletes the client from the HTTP server index file.
-    void delete_client_html_file();
+    void html_delete_client();
 
     /// Socket for the connection.
     boost::asio::ip::tcp::socket socket_;
@@ -113,7 +117,10 @@ private:
     SOCKET native_socket_;
 
     /// The status timer.
-    boost::asio::repeating_timer status_timer_;
+    boost::asio::deadline_timer status_timer_;
+
+    /// Indicates whether the status timer is active.
+    bool status_timer_enabled_;
 
     /// The device disconnection counter.
     int disconnection_counter_;

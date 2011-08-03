@@ -68,5 +68,5 @@ boost::tribool client_msg_parser::consume(client_msg& c_msg, char input)
     return false;
 }
 
+} // namespace server
 } // namespace slim
-} // namespace http

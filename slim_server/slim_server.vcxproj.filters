@@ -31,9 +31,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="basic_repeating_timer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="client_msg.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

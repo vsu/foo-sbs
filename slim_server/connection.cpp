@@ -2,6 +2,7 @@
 // connection.cpp
 // ~~~~~~~~~~~~~~
 //
+// Copyright (c) 2011 Victor Su
 // Copyright (c) 2003-2011 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -24,11 +25,13 @@ namespace server
 {
 
 connection::connection(boost::asio::io_service& io_service,
-                       connection_manager& manager, const std::string& status_filename)
+                       connection_manager& manager, 
+                       const std::string& status_filename)
     : socket_(io_service),
       connection_manager_(manager),
       status_filename_(status_filename),
       status_timer_(io_service),
+      status_timer_enabled_(false),
       device_initialized_(false)
 {
 }
@@ -49,6 +52,7 @@ void connection::start()
 void connection::stop()
 {
     status_timer_.cancel();
+    status_timer_enabled_ = false;
     socket_.close();
 }
 
@@ -91,7 +95,9 @@ void connection::send_stream_status()
 }
 
 void connection::send_stream_play(const std::string url,
-                                  unsigned short int stream_port, int bits_per_sample, int sample_rate)
+                                  unsigned short int stream_port, 
+                                  int bits_per_sample,
+                                  int sample_rate)
 {
     if (!device_initialized_)
     {
@@ -281,15 +287,15 @@ void connection::handle_client_msg(client_msg& c_msg)
 
         char mac_str[18];
         sprintf_s(mac_str, 18, "%02x:%02x:%02x:%02x:%02x:%02x",
-                  mac[0], mac[1],	mac[2],	mac[3],	mac[4],	mac[5]);
+                  mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
         mac_address_ = std::string(mac_str);
 
         // Delete any existing entries with this MAC address
-        delete_client_html_file();
+        html_delete_client();
 
         // Add a new entry for this MAC address
-        add_client_html_file(c_msg.get_device_name(), c_msg.get_firmware_revision());
+        html_add_client(c_msg.get_device_name(), c_msg.get_firmware_revision());
 
         server_msg_aude msg_aude;
         msg_aude.spdif_enable = true;
@@ -305,8 +311,11 @@ void connection::handle_client_msg(client_msg& c_msg)
         device_initialized_ = true;
 
         disconnection_counter_ = 0;
-        status_timer_.start(boost::posix_time::seconds(10),
-                            boost::bind(&connection::handle_status_timer, this));
+ 
+        status_timer_enabled_ = true;
+        status_timer_.expires_from_now(boost::posix_time::seconds(STATUS_POLL_SEC));
+        status_timer_.async_wait(boost::bind(&connection::handle_status_timer, shared_from_this(),
+                                 boost::asio::placeholders::error));
     }
     else if (c_msg.command == "IR  ")
     {
@@ -397,7 +406,7 @@ bool connection::send_data(std::vector<char> data)
     return result;
 }
 
-void connection::handle_status_timer()
+void connection::handle_status_timer(const boost::system::error_code& e)
 {
     if (++disconnection_counter_ == DISCONNECT_COUNT)
     {
@@ -407,17 +416,28 @@ void connection::handle_status_timer()
     {
         send_stream_status();
     }
+    
+    if (status_timer_enabled_)
+    {
+        status_timer_.expires_from_now(boost::posix_time::seconds(STATUS_POLL_SEC));
+        status_timer_.async_wait(boost::bind(&connection::handle_status_timer, shared_from_this(),
+                                             boost::asio::placeholders::error));
+    }
 }
 
 void connection::disconnect_client()
 {
     device_initialized_ = false;
-    delete_client_html_file();
-    status_timer_.stop();
+
+    status_timer_.cancel();
+    status_timer_enabled_ = false;
+
+    html_delete_client();
+
     connection_manager_.stop(shared_from_this());
 }
 
-void connection::add_client_html_file(const std::string device_name, char firmware_revision)
+void connection::html_add_client(const std::string device_name, char firmware_revision)
 {
     try
     {
@@ -461,7 +481,7 @@ void connection::add_client_html_file(const std::string device_name, char firmwa
     }
 }
 
-void connection::delete_client_html_file()
+void connection::html_delete_client()
 {
     try
     {
