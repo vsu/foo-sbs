@@ -131,6 +131,7 @@ public:
     {
         return COMPONENT_NAME;
     }
+
     GUID get_guid()
     {
         // {0995A30B-A883-4365-8085-3CA946C7A6A3}

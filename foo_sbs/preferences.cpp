@@ -77,7 +77,7 @@ void CMyPreferences::apply()
 
     g_apply_preferences();
 
-    OnChanged(); //our dialog content has not changed but the flags have - our currently shown values now match the settings so the apply button can be disabled
+    OnChanged(); // our dialog content has not changed but the flags have - our currently shown values now match the settings so the apply button can be disabled
 }
 
 bool CMyPreferences::HasChanged()
@@ -91,6 +91,6 @@ bool CMyPreferences::HasChanged()
 
 void CMyPreferences::OnChanged()
 {
-    //tell the host that our state has changed to enable/disable the apply button appropriately.
+    // tell the host that our state has changed to enable/disable the apply button appropriately.
     m_callback->on_state_changed();
 }
