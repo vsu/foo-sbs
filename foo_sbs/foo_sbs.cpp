@@ -22,6 +22,7 @@ boost::thread * slim_server_thread = NULL;
 
 bool send_play = false;
 bool is_playing = false;
+bool callback_registered = false;
 
 std::string app_path;
 
@@ -39,8 +40,11 @@ class initquit_sbs : public initquit
 
         boost::filesystem::create_directories(app_path);
 
-        g_start_server();
-        g_register_callback_sbs();
+        if (cfg_enable.get_value() != 0)
+        {
+            g_start_server();
+            g_register_callback_sbs();
+        }
     }
 
     void on_quit()
@@ -199,19 +203,24 @@ void g_register_callback_sbs()
         play_callback::flag_on_playback_pause;
 
     static_api_ptr_t<play_callback_manager>()->register_callback(&g_play_callback_sbs, play_flags, false);
+
+    callback_registered = true;
 }
 
 void g_unregister_callback_sbs()
 {
-    static_api_ptr_t<playback_stream_capture>()->remove_callback(&g_playback_stream_capture_callback_sbs);
-    static_api_ptr_t<play_callback_manager>()->unregister_callback(&g_play_callback_sbs);
+    if (callback_registered)
+    {
+        static_api_ptr_t<playback_stream_capture>()->remove_callback(&g_playback_stream_capture_callback_sbs);
+        static_api_ptr_t<play_callback_manager>()->unregister_callback(&g_play_callback_sbs);
+    }
 }
 
 void g_apply_preferences()
 {
     g_stop_server();
 
-    if (cfg_enable)
+    if (cfg_enable.get_value() != 0)
     {
         g_start_server();
         g_register_callback_sbs();
