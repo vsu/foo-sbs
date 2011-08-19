@@ -213,6 +213,8 @@ void g_unregister_callback_sbs()
     {
         static_api_ptr_t<playback_stream_capture>()->remove_callback(&g_playback_stream_capture_callback_sbs);
         static_api_ptr_t<play_callback_manager>()->unregister_callback(&g_play_callback_sbs);
+        
+        callback_registered = false;
     }
 }
 
