@@ -1,4 +1,5 @@
 Foobar2000 Squeezebox server plug-in
+====================================
 
 Description
 -----------
