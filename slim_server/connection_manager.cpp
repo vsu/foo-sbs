@@ -74,5 +74,20 @@ void connection_manager::send_stream_stop_all()
     }
 }
 
+void connection_manager::send_stream_play(const std::string mac_address,
+    const std::string url, unsigned short int stream_port, int bits_per_sample, 
+    int sample_rate)
+{
+    std::set<connection_ptr>::const_iterator c;
+    for (c = connections_.begin(); c != connections_.end(); ++c)
+    {
+        if (((connection_ptr)(*c))->get_mac_address() == mac_address)
+        {
+            ((connection_ptr)(*c))->send_stream_play(url, stream_port,
+                    bits_per_sample, sample_rate);
+        }
+    }
+}
+
 } // namespace server
 } // namespace slim

@@ -1,3 +1,9 @@
+/*
+ * (c) 2011 Victor Su
+ *
+ * This program is open source. For license terms, see the LICENSE file.
+ *
+ */
 #ifndef _PREFERENCES_H_
 #define _PREFERENCES_H_
 

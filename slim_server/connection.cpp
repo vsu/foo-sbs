@@ -13,11 +13,11 @@
 #include "connection_manager.hpp"
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/htxml.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include "../foo_sbs/shm.h"
 
 namespace slim
 {
@@ -25,13 +25,12 @@ namespace server
 {
 
 connection::connection(boost::asio::io_service& io_service,
-                       connection_manager& manager, 
-                       const std::string& status_filename)
+                       connection_manager& connection_manager)
     : socket_(io_service),
-      connection_manager_(manager),
-      status_filename_(status_filename),
+      connection_manager_(connection_manager),
       status_timer_(io_service),
       status_timer_enabled_(false),
+      mac_address_(""),
       device_initialized_(false)
 {
 }
@@ -51,8 +50,7 @@ void connection::start()
 
 void connection::stop()
 {
-    status_timer_.cancel();
-    status_timer_enabled_ = false;
+    remove_client();
     socket_.close();
 }
 
@@ -257,6 +255,11 @@ void connection::send_stream_stop()
     send_data(msg.to_vector());
 }
 
+std::string connection::get_mac_address()
+{
+    return mac_address_;
+}
+
 void connection::handle_client_msg(client_msg& c_msg)
 {
     if (c_msg.command == "ANIC")
@@ -270,7 +273,7 @@ void connection::handle_client_msg(client_msg& c_msg)
     }
     else if (c_msg.command == "BYE!")
     {
-        disconnect_client();
+        disconnect();
     }
     else if (c_msg.command == "DBUG")
     {
@@ -290,12 +293,23 @@ void connection::handle_client_msg(client_msg& c_msg)
                   mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
         mac_address_ = std::string(mac_str);
+        
+        std::string client_info = 
+            get_client_info(c_msg.get_device_name(), c_msg.get_firmware_revision());
+        
+        // Open or create the named mutex
+        named_mutex mutex(open_or_create, FOO_SBS_MUTEX);
+        scoped_lock<named_mutex> lock(mutex);
 
-        // Delete any existing entries with this MAC address
-        html_delete_client();
+        // Open the managed segment
+        managed_shared_memory segment(open_only, FOO_SBS_SHM_SEGMENT);  
 
-        // Add a new entry for this MAC address
-        html_add_client(c_msg.get_device_name(), c_msg.get_firmware_revision());
+        // Find the map using the c-string name
+        ShMemMap *shm_map = segment.find<ShMemMap>(FOO_SBS_SHM_MAP).first;
+        
+        // Add the new client
+        shm_map->erase(mac_address_);
+        shm_map->insert(std::pair<std::string, std::string>(mac_address_, client_info));
 
         server_msg_aude msg_aude;
         msg_aude.spdif_enable = true;
@@ -410,7 +424,7 @@ void connection::handle_status_timer(const boost::system::error_code& e)
 {
     if (++disconnection_counter_ == DISCONNECT_COUNT)
     {
-        disconnect_client();
+        disconnect();
     }
     else
     {
@@ -425,100 +439,51 @@ void connection::handle_status_timer(const boost::system::error_code& e)
     }
 }
 
-void connection::disconnect_client()
+void connection::disconnect()
+{
+    remove_client();
+    connection_manager_.stop(shared_from_this());
+}
+
+void connection::remove_client()
 {
     device_initialized_ = false;
 
     status_timer_.cancel();
     status_timer_enabled_ = false;
 
-    html_delete_client();
+    // Open or create the named mutex
+    named_mutex mutex(open_or_create, FOO_SBS_MUTEX);
+    scoped_lock<named_mutex> lock(mutex);
 
-    connection_manager_.stop(shared_from_this());
+    // Open the managed segment
+    managed_shared_memory segment(open_only, FOO_SBS_SHM_SEGMENT);  
+
+    // Find the map using the c-string name
+    ShMemMap *shm_map = segment.find<ShMemMap>(FOO_SBS_SHM_MAP).first;
+        
+    // Remove the client
+    shm_map->erase(mac_address_);
+
+    mac_address_ = "";
 }
 
-void connection::html_add_client(const std::string device_name, char firmware_revision)
+std::string connection::get_client_info(std::string device_name, char firmware_revision)
 {
-    try
-    {
-        std::fstream in_file(status_filename_.c_str(), std::ios_base::in);
-        boost::htxml::document html_dom;
-        html_dom.read(in_file);
+    // Convert firmware revision to string
+    char revision_str[4];
+    sprintf_s(revision_str, 4, "%u", firmware_revision);
 
-        boost::htxml::ptr_element_vector_t div = html_dom.getElementsByName("div");
+    // Get current local time
+    boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
+    std::string now_str = boost::posix_time::to_simple_string(now);
 
-        if (div.size() > 0)
-        {
-            boost::htxml::element * span = new boost::htxml::element("span", div[0]);
-            boost::htxml::element * br = new boost::htxml::element("br", div[0]);
+    // Get IP address of socket
+    std::string ip_addr = socket_.remote_endpoint().address().to_string();
 
-            boost::htxml::attrib_value attr;
-            attr._name = "id";
-            attr._value = mac_address_;
-            attr._singleton = false;
-            span->setAttr(attr);
-
-            // Convert firmware revision to string
-            char revision_str[4];
-            sprintf_s(revision_str, 4, "%u", firmware_revision);
-
-            // Get current local time
-            boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
-            std::string now_str = boost::posix_time::to_simple_string(now);
-
-            // Get IP address of socket
-            std::string ip_addr = socket_.remote_endpoint().address().to_string();
-
-            span->setValue("[" + now_str + "] " + mac_address_ + " | " + ip_addr + " | " + device_name + " revision " + revision_str);
-            span->addChild(boost::htxml::ptr_element_t(br));
-
-            div[0]->addChild(boost::htxml::ptr_element_t(span));
-        }
-
-        std::ofstream out_file(status_filename_.c_str());
-        html_dom.write(out_file);
-        out_file.close();
-    }
-    catch (std::exception&)
-    {
-    }
-}
-
-void connection::html_delete_client()
-{
-    try
-    {
-        std::fstream html_file(status_filename_.c_str(), std::ios_base::in);
-        boost::htxml::document html_dom;
-        html_dom.read(html_file);
-
-        boost::htxml::ptr_element_vector_t div = html_dom.getElementsByName("div");
-        boost::htxml::ptr_element_vector_t span = html_dom.getElementsById(mac_address_);
-
-        // There appears to be a bug in the htxml code that erases elements.
-        // We will hide the elements for now.
-        //if ((div.size() > 0 ) && (span.size() > 0))
-        //{
-        //	div[0]->erase(span.begin(), span.end());
-        //}
-
-        boost::htxml::ptr_element_vector_t::iterator iter;
-        for (iter = span.begin(); iter != span.end(); ++iter)
-        {
-            boost::htxml::attrib_value attr;
-            attr._name = "style";
-            attr._value = "display:none";
-            attr._singleton = false;
-            (*iter)->setAttr(attr);
-        }
-
-        std::ofstream out_file(status_filename_.c_str());
-        html_dom.write(out_file);
-        out_file.close();
-    }
-    catch (std::exception&)
-    {
-    }
+    return (
+        "[" + now_str + "] " +  mac_address_ + " | " + ip_addr + " | " + device_name + 
+        " revision " + revision_str);
 }
 
 } // namespace server

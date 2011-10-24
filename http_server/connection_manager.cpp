@@ -2,6 +2,7 @@
 // connection_manager.cpp
 // ~~~~~~~~~~~~~~~~~~~~~~
 //
+// Copyright (c) 2011 Victor C. Su
 // Copyright (c) 2003-2011 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -34,6 +35,11 @@ void connection_manager::stop_all()
     std::for_each(connections_.begin(), connections_.end(),
                   boost::bind(&connection::stop, _1));
     connections_.clear();
+}
+
+std::set<connection_ptr> connection_manager::get_connections()
+{
+    return connections_;
 }
 
 void connection_manager::send_data_all(void * data, size_t length)

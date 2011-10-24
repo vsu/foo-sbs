@@ -223,9 +223,11 @@
     <ClCompile Include="preferences.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="defs.h" />
     <ClInclude Include="foo_sbs.h" />
     <ClInclude Include="preferences.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="shm.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="foo_sbs.rc" />

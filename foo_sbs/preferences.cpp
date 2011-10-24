@@ -1,3 +1,9 @@
+/*
+ * (c) 2011 Victor Su
+ *
+ * This program is open source. For license terms, see the LICENSE file.
+ *
+ */
 #include "preferences.h"
 #include "foo_sbs.h"
 

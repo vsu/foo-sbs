@@ -39,8 +39,8 @@ public:
     /// Stop the server.
     void stop();
 
-    /// The connection manager which owns all live connections.
-    connection_manager connection_manager_;
+    /// Returns a reference to the connection manager.
+    connection_manager& get_connection_manager();
 
 private:
     /// Handle completion of an asynchronous accept operation.
@@ -54,6 +54,9 @@ private:
 
     /// Acceptor used to listen for incoming connections.
     boost::asio::ip::tcp::acceptor acceptor_;
+
+    /// The connection manager which owns all live connections.
+    connection_manager connection_manager_;
 
     /// The next connection to be accepted.
     connection_ptr new_connection_;

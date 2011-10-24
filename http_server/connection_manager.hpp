@@ -2,6 +2,7 @@
 // connection_manager.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~
 //
+// Copyright (c) 2011 Victor C. Su
 // Copyright (c) 2003-2011 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -34,6 +35,9 @@ public:
 
     /// Stop all connections.
     void stop_all();
+
+    /// Returns the managed connections.
+    std::set<connection_ptr> get_connections();
 
     /// Send data to all connections.
     void send_data_all(void * data, size_t length);

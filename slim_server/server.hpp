@@ -28,8 +28,7 @@ class server
 {
 public:
     /// Construct the server to listen on the specified TCP address and port.
-    explicit server(const std::string& address, const int port,
-                    const std::string& status_filename);
+    explicit server(const std::string& address, const int port);
 
     /// Run the server's io_service loop.
     void run();
@@ -37,8 +36,8 @@ public:
     /// Stop the server.
     void stop();
 
-    /// The connection manager which owns all live connections.
-    connection_manager connection_manager_;
+    /// Returns a reference to the connection manager.
+    connection_manager& get_connection_manager();
 
 private:
     /// Handle completion of an asynchronous accept operation.
@@ -53,18 +52,12 @@ private:
     /// Acceptor used to listen for incoming connections.
     boost::asio::ip::tcp::acceptor acceptor_;
 
+    /// The connection manager which owns all live connections.
+    connection_manager connection_manager_;
+
     /// The next connection to be accepted.
     connection_ptr new_connection_;
-
-    /// The client status filename
-    std::string status_filename_;
 };
-
-const char html_template[] =
-    "<html>"
-    "<head><title>Foobar Squeezebox Server</title></head>"
-    "<body><h3>Active Clients</h3><div></div></body>"
-    "</html>";
 
 } // namespace server
 } // namespace slim

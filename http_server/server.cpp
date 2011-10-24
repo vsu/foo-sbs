@@ -22,7 +22,8 @@ server::server(const std::string& address, const int port,
       acceptor_(io_service_),
       connection_manager_(),
       new_connection_(new connection(io_service_,
-                                     connection_manager_, request_handler_)),
+                                     connection_manager_, 
+                                     request_handler_)),
       request_handler_(doc_root)
 {
     std::string port_str;
@@ -57,6 +58,11 @@ void server::stop()
     // Post a call to the stop function so that server::stop() is safe to call
     // from any thread.
     io_service_.post(boost::bind(&server::handle_stop, this));
+}
+
+connection_manager& server::get_connection_manager()
+{
+    return connection_manager_;
 }
 
 void server::handle_accept(const boost::system::error_code& e)

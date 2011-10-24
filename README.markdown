@@ -41,8 +41,9 @@ to downsample rates above 48 kHz.  If you use the modified
 0.6.0 version, you can specify that only rates above 48 kHz
 are downsampled, while passing through anything below that.
 
-You can point your web browser to port 9000 to get a list of
-active clients.
+You can point your web browser to http://hostname:9000/status.html
+to get a list of active clients, where hostname is the name
+or IP address of the box that runs Foobar.
 
 
 Compilation
@@ -52,7 +53,6 @@ You will need:
 
 Foobar2000 SDK (http://www.foobar2000.org/SDK)  
 Include files from the Windows Template Library (http://sourceforge.net/projects/wtl/)  
-Boost C++ libraries (www.boost.org) (You can find pre-built binaries at boostpro.com)  
-Boost HTXML (http://www.ibusy.com/articles/software-development/boost-htxml-library.html)
+Boost C++ libraries (www.boost.org) (You can find pre-built binaries at boostpro.com)
 
 Project and solution files are currently for Visual Studio 2010.

@@ -19,13 +19,11 @@ namespace slim
 namespace server
 {
 
-server::server(const std::string& address, const int port,
-               const std::string& status_filename)
+server::server(const std::string& address, const int port)
     : io_service_(),
       acceptor_(io_service_),
       connection_manager_(),
-      status_filename_(status_filename),
-      new_connection_(new connection(io_service_,  connection_manager_, status_filename))
+      new_connection_(new connection(io_service_,  connection_manager_))
 {
     std::string port_str;
     std::stringstream out;
@@ -43,15 +41,6 @@ server::server(const std::string& address, const int port,
     acceptor_.async_accept(new_connection_->socket(),
                            boost::bind(&server::handle_accept, this,
                                        boost::asio::placeholders::error));
-
-    if (boost::filesystem::exists(status_filename_))
-    {
-        boost::filesystem::remove(status_filename_);
-    }
-
-    std::ofstream file(status_filename_.c_str());
-    file << html_template;
-    file.close();
 }
 
 void server::run()
@@ -70,13 +59,17 @@ void server::stop()
     io_service_.post(boost::bind(&server::handle_stop, this));
 }
 
+connection_manager& server::get_connection_manager()
+{
+    return connection_manager_;
+}
+
 void server::handle_accept(const boost::system::error_code& e)
 {
     if (!e)
     {
         connection_manager_.start(new_connection_);
-        new_connection_.reset(new connection(io_service_, connection_manager_,
-                                             status_filename_));
+        new_connection_.reset(new connection(io_service_, connection_manager_));
         acceptor_.async_accept(new_connection_->socket(),
                                boost::bind(&server::handle_accept, this,
                                            boost::asio::placeholders::error));

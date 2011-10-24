@@ -39,8 +39,7 @@ class connection
 public:
     /// Construct a connection with the given io_service.
     explicit connection(boost::asio::io_service& io_service,
-                        connection_manager& manager, 
-                        const std::string& status_filename);
+                        connection_manager& connection_manager);
 
     /// Get the socket associated with the connection.
     boost::asio::ip::tcp::socket& socket();
@@ -69,6 +68,9 @@ public:
     /// Send a stream stop command.
     void send_stream_stop();
 
+    /// Return the connected client MAC address.
+    std::string get_mac_address();
+
 private:
     /// Handles an incoming client message.
     void handle_client_msg(client_msg& c_msg);
@@ -87,13 +89,13 @@ private:
     void handle_status_timer(const boost::system::error_code& e);
 
     /// Disconnects the client connection.
-    void disconnect_client();
+    void disconnect();
+    
+    /// Reset client state and remove.
+    void remove_client();
 
-    /// Adds the client to the HTTP server index file.
-    void html_add_client(const std::string device_name, char firmware_revision);
-
-    /// Deletes the client from the HTTP server index file.
-    void html_delete_client();
+    /// Return connected client information.
+    std::string get_client_info(std::string device_name, char firmware_revision);
 
     /// Socket for the connection.
     boost::asio::ip::tcp::socket socket_;
@@ -109,9 +111,6 @@ private:
 
     /// The parser for the client message.
     client_msg_parser client_msg_parser_;
-
-    /// The client status filename.
-    std::string status_filename_;
 
     /// The underlying native socket.
     SOCKET native_socket_;

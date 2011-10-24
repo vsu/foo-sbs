@@ -1,3 +1,9 @@
+/*
+ * (c) 2011 Victor Su
+ *
+ * This program is open source. For license terms, see the LICENSE file.
+ *
+ */
 #include <winsock2.h>
 #include <foobar2000.h>
 #include "../ATLHelpers/ATLHelpers.h"
@@ -5,8 +11,9 @@
 #include <sstream>
 #include <boost/thread/thread.hpp>
 #include <boost/asio.hpp>
-#include <boost/filesystem.hpp>
 #include "foo_sbs.h"
+#include "defs.h"
+#include "shm.h"
 #include "preferences.h"
 #include "../http_server/server.hpp"
 #include "../slim_server/server.hpp"
@@ -14,31 +21,41 @@
 #define COMPONENT_NAME		"Squeezebox Server"
 #define COMPONENT_VERSION	"0.1"
 
-http::server::server * http_server;
-boost::thread * http_server_thread = NULL;
+http::server::server *http_server;
+boost::thread *http_server_thread = NULL;
 
-slim::server::server * slim_server;
-boost::thread * slim_server_thread = NULL;
+slim::server::server *slim_server;
+boost::thread *slim_server_thread = NULL;
 
 bool send_play = false;
 bool is_playing = false;
 bool callback_registered = false;
-
-std::string app_path;
 
 
 class initquit_sbs : public initquit
 {
     void on_init()
     {
-        app_path.append(core_api::get_profile_path());
-        app_path.append("\\");
-        app_path.append(core_api::get_my_file_name());
+        // Shared memory front-end that is able to construct objects
+        // associated with a c-string. Erase previous shared memory with the name
+        // to be used and create the memory segment at the specified address and initialize resources
+        shared_memory_object::remove(FOO_SBS_SHM_SEGMENT);
+        managed_shared_memory segment(
+            create_only, 
+            FOO_SBS_SHM_SEGMENT,  // segment name
+            65536);               // segment size in bytes
 
-        // Remove the "file://" prefix
-        app_path.erase(0, 7);
+        // Initialize the shared memory STL-compatible allocator
+        ShMemAllocator alloc_inst (segment.get_segment_manager());
 
-        boost::filesystem::create_directories(app_path);
+        // Construct a shared memory map.
+        // Note that the first parameter is the comparison function,
+        // and the second one the allocator.
+        // This the same signature as std::map's constructor taking an allocator
+        ShMemMap *shm_map = 
+            segment.construct<ShMemMap>(FOO_SBS_SHM_MAP)           // object name
+                                       (std::less<std::string>(),  // first ctor parameter
+                                        alloc_inst);               // second ctor parameter
 
         if (cfg_enable.get_value() != 0)
         {
@@ -51,6 +68,7 @@ class initquit_sbs : public initquit
     {
         g_stop_server();
         g_unregister_callback_sbs();
+        shared_memory_object::remove(FOO_SBS_SHM_SEGMENT);
     }
 };
 
@@ -62,20 +80,45 @@ class playback_stream_capture_callback_sbs : public playback_stream_capture_call
 public:
     void on_chunk(const audio_chunk & chunk)
     {
+        unsigned int srate = chunk.get_srate();
+
         if (send_play)
         {
             send_play = false;
-            unsigned int srate = chunk.get_srate();
 
-            slim_server->connection_manager_.send_stream_play_all(
-                "/stream.pcm", cfg_http_port.get_value(), g_get_bps(), srate);
+            slim_server->get_connection_manager().send_stream_play_all(
+                URL_PATH_STREAM, cfg_http_port.get_value(), g_get_bps(), srate);
         }
 
         if (is_playing)
         {
             mem_block_container_impl_t<> data;
             chunk.to_raw_data(data, g_get_bps());
-            http_server->connection_manager_.send_data_all(data.get_ptr(), data.get_size());
+            
+            std::set<http::server::connection_ptr> connections = 
+                http_server->get_connection_manager().get_connections();
+            
+            std::set<http::server::connection_ptr>::const_iterator c;
+            for (c = connections.begin(); c != connections.end(); ++c)
+            {
+                http::server::connection_ptr c_ptr = (http::server::connection_ptr)(*c);
+
+                // if sending data to the http stream connection returns with 
+                // an error, close the connection and call slim server to send
+                // a new play command to the device.
+                if (c_ptr->send_data(data.get_ptr(), data.get_size()) < 0)
+                {
+                    std::string mac_address = c_ptr->get_mac_address();
+
+                    http_server->get_connection_manager().stop(c_ptr);
+
+                    if (!mac_address.empty())
+                    {
+                        slim_server->get_connection_manager().send_stream_play(
+                            mac_address, URL_PATH_STREAM, cfg_http_port.get_value(), g_get_bps(), srate);
+                    }
+                }
+            }
         }
     }
 };
@@ -98,8 +141,8 @@ public:
     virtual void on_playback_stop(play_control::t_stop_reason p_reason)
     {
         is_playing = false;
-        slim_server->connection_manager_.send_stream_stop_all();
-        http_server->connection_manager_.stop_all();
+        slim_server->get_connection_manager().send_stream_stop_all();
+        http_server->get_connection_manager().stop_all();
     }
 
     virtual void on_playback_seek(double) {}
@@ -110,11 +153,11 @@ public:
         is_playing = !p_state;
         if (p_state)
         {
-            slim_server->connection_manager_.send_stream_pause_all();
+            slim_server->get_connection_manager().send_stream_pause_all();
         }
         else
         {
-            slim_server->connection_manager_.send_stream_unpause_all();
+            slim_server->get_connection_manager().send_stream_unpause_all();
         }
     }
 
@@ -154,15 +197,16 @@ static preferences_page_factory_t<preferences_page_myimpl> g_preferences_page_sb
 
 void g_http_server_thread_worker()
 {
-    http_server = new http::server::server("0.0.0.0", cfg_http_port.get_value(), app_path);
+    http_server = new http::server::server("0.0.0.0", cfg_http_port.get_value(), "");
     http_server->run();
+    delete http_server;
 }
 
 void g_slim_server_thread_worker()
 {
-    slim_server = new slim::server::server("0.0.0.0", cfg_slim_port.get_value(),
-                                           app_path + "\\index.html");
+    slim_server = new slim::server::server("0.0.0.0", cfg_slim_port.get_value());
     slim_server->run();
+    delete slim_server;
 }
 
 void g_start_server()
@@ -177,6 +221,7 @@ void g_stop_server()
     {
         slim_server->stop();
         slim_server_thread->join();
+        delete slim_server_thread;
         slim_server_thread = NULL;
     }
 
@@ -184,6 +229,7 @@ void g_stop_server()
     {
         http_server->stop();
         http_server_thread->join();
+        delete http_server_thread;
         http_server_thread = NULL;
     }
 }

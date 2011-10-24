@@ -2,6 +2,7 @@
 // connection.hpp
 // ~~~~~~~~~~~~~~
 //
+// Copyright (c) 2011 Victor C. Su
 // Copyright (c) 2003-2011 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -48,11 +49,10 @@ public:
     void stop();
 
     /// Send data to the specified connection.
-    void send_data(void * data, size_t length);
-
-    /// Holds a value indicating whether the connection is ready
-    /// to receive streaming data.
-    bool ready_for_stream;
+    int send_data(void * data, size_t length);
+    
+    /// Returns the MAC address of the device associated with the connection.
+    std::string get_mac_address();
 
 private:
     /// Handle completion of a read operation.
@@ -88,6 +88,13 @@ private:
 
     /// The underlying native socket.
     SOCKET native_socket_;
+
+    /// The URL parameters in the incoming request.
+    std::string url_params_;
+
+    /// Holds a value indicating whether the connection is ready
+    /// to receive streaming data.
+    bool ready_for_stream_;
 };
 
 typedef boost::shared_ptr<connection> connection_ptr;
