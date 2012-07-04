@@ -68,6 +68,12 @@ public:
     /// Send a stream stop command.
     void send_stream_stop();
 
+    /// Send an audio output command.
+    void send_audio_output(bool spdif_enable, bool dac_enable);
+
+    /// Send an audio gain command.
+    void send_audio_gain(unsigned char vol, bool dvc_enable, unsigned char preamp);
+
     /// Return the connected client MAC address.
     std::string get_mac_address();
 

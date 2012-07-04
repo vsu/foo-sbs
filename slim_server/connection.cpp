@@ -255,6 +255,27 @@ void connection::send_stream_stop()
     send_data(msg.to_vector());
 }
 
+void connection::send_audio_output(bool spdif_enable, bool dac_enable)
+{
+    server_msg_aude msg_aude;
+    
+    msg_aude.spdif_enable = spdif_enable;
+    msg_aude.dac_enable = dac_enable;
+
+    send_data(msg_aude.to_vector());
+}
+
+void connection::send_audio_gain(unsigned char vol, bool dvc_enable, unsigned char preamp)
+{
+    server_msg_audg msg_audg;
+    
+    msg_audg.volume = vol;
+    msg_audg.dvc_enable = dvc_enable;
+    msg_audg.preamp = preamp;
+
+    send_data(msg_audg.to_vector());
+}
+
 std::string connection::get_mac_address()
 {
     return mac_address_;
@@ -311,16 +332,8 @@ void connection::handle_client_msg(client_msg& c_msg)
         shm_map->erase(mac_address_);
         shm_map->insert(std::pair<std::string, std::string>(mac_address_, client_info));
 
-        server_msg_aude msg_aude;
-        msg_aude.spdif_enable = true;
-        msg_aude.dac_enable = true;
-        send_data(msg_aude.to_vector());
-
-        server_msg_audg msg_audg;
-        msg_audg.volume = 128;
-        msg_audg.dvc_enable = false;
-        msg_audg.preamp = 255;
-        send_data(msg_audg.to_vector());
+        send_audio_output(true, true);
+        send_audio_gain(128, false, 255);
 
         device_initialized_ = true;
 

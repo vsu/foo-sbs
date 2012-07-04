@@ -42,6 +42,9 @@ void connection_manager::send_stream_play_all(const std::string url,
     std::set<connection_ptr>::const_iterator c;
     for (c = connections_.begin(); c != connections_.end(); ++c)
     {
+        ((connection_ptr)(*c))->send_audio_output(true, true);
+        ((connection_ptr)(*c))->send_audio_gain(128, false, 255);
+
         ((connection_ptr)(*c))->send_stream_play(url, stream_port,
                 bits_per_sample, sample_rate);
     }
