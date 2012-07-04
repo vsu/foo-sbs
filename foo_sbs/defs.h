@@ -8,6 +8,5 @@
 #define _DEFS_H_
 
 #define URL_PATH_STREAM   "/stream.pcm"
-#define URL_PATH_STATUS   "/status.html"
 
 #endif

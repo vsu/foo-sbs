@@ -76,7 +76,7 @@ void request_handler::handle_request(const request& req, reply& rep, std::string
         rep.headers[1].value = "audio/x-pcm";
         rep.keep_open = true;
     }
-    else if (request_path == URL_PATH_STATUS)
+    else
     {
         // Fill out the reply to be sent to the client.
         rep.status = reply::ok;
@@ -111,6 +111,7 @@ void request_handler::handle_request(const request& req, reply& rep, std::string
         rep.headers[1].value = mime_types::extension_to_type(extension);
         rep.keep_open = false;
     }
+    /*** Disable file retrieval
     else
     {
         if (!doc_root_.empty())
@@ -140,6 +141,7 @@ void request_handler::handle_request(const request& req, reply& rep, std::string
             rep = reply::stock_reply(reply::not_found);
         }
     }
+    ***/
 }
 
 bool request_handler::url_decode(const std::string& in, std::string& out)
