@@ -26,8 +26,6 @@ class connection_manager
     : private boost::noncopyable
 {
 public:
-    //explicit connection_manager(std::vector<std::
-
     /// Add the specified connection to the manager and start it.
     void start(connection_ptr c);
 
@@ -52,6 +50,11 @@ public:
     /// Send stream stop command to all connections.
     void send_stream_stop_all();
 
+    /// Set audio gain for all connections.
+    void send_audio_gain_all(unsigned char vol, 
+                             bool dvc_enable, 
+                             unsigned char preamp);
+
     /// Send stream play command to the connection associated 
     /// with the given MAC address.
     void send_stream_play(const std::string mac_address,
@@ -60,14 +63,9 @@ public:
                           int bits_per_sample, 
                           int sample_rate);
 
-    void add_client_info(const std::string mac_address,
-                         const std::string client_info);
-
 private:
     /// The managed connections.
     std::set<connection_ptr> connections_;
-
-
 };
 
 } // namespace server

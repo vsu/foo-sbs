@@ -333,7 +333,7 @@ void connection::handle_client_msg(client_msg& c_msg)
         shm_map->insert(std::pair<std::string, std::string>(mac_address_, client_info));
 
         send_audio_output(true, true);
-        send_audio_gain(128, false, 255);
+        send_audio_gain(128, true, 255);
 
         device_initialized_ = true;
 

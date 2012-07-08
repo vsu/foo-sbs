@@ -86,6 +86,10 @@ public:
         {
             send_play = false;
 
+            slim_server->get_connection_manager().send_stream_stop_all();
+
+            slim_server->get_connection_manager().send_audio_gain_all(128, true, 255);
+
             slim_server->get_connection_manager().send_stream_play_all(
                 URL_PATH_STREAM, cfg_http_port.get_value(), g_get_bps(), srate);
         }
